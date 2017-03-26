@@ -4,12 +4,7 @@ print.waterfall <- function(dt, bar.width = 9,
     
     if(bar.width < 2) stop("Width too small.")
     if(nchar(as.character(fill)) > 1) fill <- substr(fill, 1, 1)
-
-    dt  <- prepare.dt(as.data.frame(dt))
-    nbar <- nrow(dt)
-    if(nbar < 3) stop("Less then 3 bars. Invalid input.")
-    
-    
+  
     # ------ HELPERS ------ #
     # <helpers>
     # helper function to draw a horizontal line
@@ -77,6 +72,11 @@ print.waterfall <- function(dt, bar.width = 9,
     
     # ------- FUNCTION ------ #
 
+  
+    dt  <- prepare.dt(as.data.frame(dt))
+    nbar <- nrow(dt)
+    if(nbar < 3) stop("Less then 3 bars. Invalid input.")
+
     # the descriptions
     steps <- as.character(dt[, 1])
     numbers <- dt[, 2]
@@ -97,14 +97,22 @@ print.waterfall <- function(dt, bar.width = 9,
     # give every bar row names for final binding by rownames
     all.rows <- rownames(WF[[1]])
 
-    for (i in 2:(nbar-1)) {
-    	WF[[i]] <- add.bar(bar.width, round(abs(numbers[i]) / x))
+    for (i in 2:nbar) {
 	
-	# if is 'e', then start from bottom, otherwise start from top
-	if(dt[i-1 ,2] > 0 | dt$tag[i-1] == 1)
+	# if previous > 0, start from top, otherwise bottom
+	# unless tag 'e', where count's sign is reversed
+	if(dt[i-1 ,2] > 0 | dt$tag[i-1] == 1 & dt[i-1, 2] < 0)
 	    bar.start <- min(as.numeric(rownames(WF[[i-1]])))
 	else
 	    bar.start <- max(as.numeric(rownames(WF[[i-1]])))
+
+	if (dt$tag[i] == 1)
+	    WF[[i]] <- add.bar(bar.width,
+			       max(as.numeric(all.rows)) - 
+				   bar.start + 1)
+	else
+	    WF[[i]] <- add.bar(bar.width, round(abs(numbers[i]) / x))
+
 	# assign rownames as corresponding postion in waterfall
 	rownames(WF[[i]]) <- seq(bar.start, 
 	    		      len = nrow(WF[[i]]),
@@ -114,8 +122,6 @@ print.waterfall <- function(dt, bar.width = 9,
 	all.rows <- c(all.rows, rownames(WF[[i]]))
     }
 
-    # last bar to reach end coz rounding difference
-    WF[[nbar]] <- add.bar(bar.width, max(as.numeric(all.rows)) - max(as.numeric(rownames(WF[[nbar-1]]))) + 1)
     rownames(WF[[nbar]]) <- seq(max(as.numeric(rownames(WF[[nbar-1]]))), 
                                 len = nrow(WF[[nbar]]),
                                 by = 1)
@@ -181,9 +187,20 @@ print.waterfall <- function(dt, bar.width = 9,
 
 
 
+wf <- data.frame(step = c("Catchment Universe",
+			  "Unsuitable Demographics", 
+			  "Tested",
+			  "Unfavourable Competition",
+			  "Cannibalisation Too High", 
+			  "Final White Space"),
+		 count = c(2889, -1350, "e", -490, -217, "e"))
+print.waterfall(wf, bar.width = 8)
 
-# dt <- data.frame(step = c("Experian White Space", "OC&C Catchments",
-# 			  "Population Too Low", "Tested",
-# 			  "Cannibalisation Too High", "B&M White Space"),
-# 		 count = c(12, 4, -6, "e", -2, "e"))
+wf2 <- data.frame(step = c("2015 Revenue", 
+			   "Gain from Cheaper Rent", 
+			   "Loss to Competiton", 
+			   "2016 Revenue", 
+			   "Loss to Competition", 
+			   "2017 Revenue"),
+		  count = c(2500, 630, -340, "e", -490, "e"))
 
